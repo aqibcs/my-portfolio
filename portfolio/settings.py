@@ -12,6 +12,9 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 import os
 from pathlib import Path
+import environ
+from dotenv import load_dotenv
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,14 +23,46 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
+# Initialize environment variables
+env = environ.Env(
+    DEBUG=(bool, False),
+    SECRET_KEY=(str, ''),
+    DATABASE_URL=(str, 'sqlite:///db.sqlite3'),
+    EMAIL_BACKEND=(str, 'django.core.mail.backends.console.EmailBackend'),
+    EMAIL_HOST=(str, ''),
+    EMAIL_PORT=(int, 587),
+    EMAIL_USE_TLS=(bool, True),
+    EMAIL_HOST_USER=(str, ''),
+    EMAIL_HOST_PASSWORD=(str, ''),
+    DEFAULT_FROM_EMAIL=(str, ''),
+)
+
+# Read .env file if it exists
+environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
+
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-tx@u7b6kik-f!1x)g7qbd!a$qk32dy8m$b2il#v%sx25#b)n12'
+SECRET_KEY = env("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env("DEBUG")
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    '.vercel.app',
+    '.now.sh',
+    'localhost',
+    '127.0.0.1',
+    'aqibbackend.engineer',
+    'www.aqibbackend.engineer'
+]
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://aqibbackend.engineer',
+    'https://www.aqibbackend.engineer',
+    'https://*.railway.app',
+    'https://*.vercel.app',
+    'http://localhost:8000', 
+    'http://127.0.0.1:8000' 
+]
 
 # Application definition
 
@@ -38,10 +73,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'core',
+    'projects',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', 
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -75,10 +113,17 @@ WSGI_APPLICATION = 'portfolio.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+# Load environment variables from .env
+load_dotenv()
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST'),
+        'PORT': os.getenv('DB_PORT'),
     }
 }
 
@@ -107,7 +152,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Karachi'
 
 USE_I18N = True
 
@@ -117,9 +162,33 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+# Update static root to match vercel.json configuration
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles_build', 'static')
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Email Settings
+EMAIL_BACKEND = env("EMAIL_BACKEND")
+EMAIL_HOST = env("EMAIL_HOST")
+EMAIL_PORT = env.int("EMAIL_PORT")
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS")
+EMAIL_HOST_USER = env("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
+
+
+# Security settings
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# Only force SSL redirect in production
+SECURE_SSL_REDIRECT = not DEBUG and not os.environ.get('VERCEL_DEV')
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
