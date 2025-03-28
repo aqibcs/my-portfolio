@@ -3,7 +3,6 @@ from django.contrib import messages
 from .models import Skill, Education, Experience
 from .forms import ContactForm
 from projects.models import Project
-from django.core.mail import send_mail
 from django.core.mail import send_mail, BadHeaderError
 import environ
 
